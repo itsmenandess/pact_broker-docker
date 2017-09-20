@@ -53,11 +53,12 @@ if [ "${TRAVIS}" == "true" ]; then
 fi
 
 # defaults
-[ -z "${PACT_BROKER_PORT}" ]  && PACT_BROKER_PORT=80
-[ -z "${PSQL_WAIT_TIMEOUT}" ] && PSQL_WAIT_TIMEOUT="10s"
-[ -z "${PACT_WAIT_TIMEOUT}" ] && PACT_WAIT_TIMEOUT="15s"
-[ -z "${PACT_CONT_NAME}" ]    && PACT_CONT_NAME="broker_app"
-[ -z "${PSQL_CONT_NAME}" ]    && PSQL_CONT_NAME="postgres"
+[ -z "${PACT_BROKER_PORT}" ]             && PACT_BROKER_PORT=80
+[ -z "${PSQL_WAIT_TIMEOUT}" ]            && PSQL_WAIT_TIMEOUT="10s"
+[ -z "${PACT_WAIT_TIMEOUT}" ]            && PACT_WAIT_TIMEOUT="15s"
+[ -z "${PACT_CONT_NAME}" ]               && PACT_CONT_NAME="broker_app"
+[ -z "${PSQL_CONT_NAME}" ]               && PSQL_CONT_NAME="postgres"
+[ -z "${PACT_BROKER_DATABASE_ADAPTER}" ] && PACT_BROKER_DATABASE_ADAPTER="postgres"
 
 echo "Will build the pact broker"
 docker build -t=dius/pact_broker .
@@ -76,11 +77,11 @@ if [ "$(uname)" == "Darwin" ]; then
   if [ "true" == "$(command -v boot2docker > /dev/null 2>&1 && echo 'true' || echo 'false')" ]; then
     test_ip=$(boot2docker ip)
   else
-    if [ "true" == "$(command -v docker-machine > /dev/null 2>&1 && echo 'true' || echo 'false')" ]; then
-      test_ip=$(docker-machine ip default)
+    if  [ "true" == "$(command -v docker > /dev/null 2>&1 && echo 'true' || echo 'false')" ]; then
+      test_ip='localhost'
     else
-      if  [ "true" == "$(command -v docker > /dev/null 2>&1 && echo 'true' || echo 'false')" ]; then
-        test_ip='localhost'
+      if [ "true" == "$(command -v docker-machine > /dev/null 2>&1 && echo 'true' || echo 'false')" ]; then
+        test_ip=$(docker-machine ip default)
       else
         echo "Cannot detect either boot2docker, docker-machine, or docker native" && exit 1
     fi
@@ -144,15 +145,13 @@ if [ "${DISPOSABLE_PSQL}" == "true" ]; then
 fi
 
 # Validate required variables
-[ -z "${PACT_BROKER_DATABASE_USERNAME}" ] && required_args
-[ -z "${PACT_BROKER_DATABASE_PASSWORD}" ] && required_args
-[ -z "${PACT_BROKER_DATABASE_HOST}" ] && required_args
 [ -z "${PACT_BROKER_DATABASE_NAME}" ] && required_args
 
 echo ""
 echo "Run the built Pact Broker"
 # Using `--privileged` due to unspecified issues in TravisCI
 docker run --privileged --name=${PACT_CONT_NAME} -d -p ${PORT_BIND} \
+  -e PACT_BROKER_DATABASE_ADAPTER=${PACT_BROKER_DATABASE_ADAPTER} \
   -e PACT_BROKER_DATABASE_USERNAME=${PACT_BROKER_DATABASE_USERNAME} \
   -e PACT_BROKER_DATABASE_PASSWORD=${PACT_BROKER_DATABASE_PASSWORD} \
   -e PACT_BROKER_DATABASE_HOST=${PACT_BROKER_DATABASE_HOST} \
@@ -190,11 +189,11 @@ $(dirname "$0")/../container/usr/bin/wait_ready ${PACT_WAIT_TIMEOUT} ${PACT_BROK
 
 echo ""
 echo "Checking that server accepts and return HTML from outside"
-curl -H "Accept:text/html" --user ${PACT_BROKER_BASIC_AUTH_USERNAME}:${PACT_BROKER_BASIC_AUTH_PASSWORD} -s "http://${test_ip}:${EXTERN_BROKER_PORT}/ui/relationships"
+curl -H "Accept:text/html" --user ${PACT_BROKER_BASIC_AUTH_USERNAME}:${PACT_BROKER_BASIC_AUTH_PASSWORD} -s "http://${test_ip}:${EXTERN_BROKER_PORT}"
 
 echo ""
 echo "Checking for specific HTML content from outside: '0 pacts'"
-curl -H "Accept:text/html" --user ${PACT_BROKER_BASIC_AUTH_USERNAME}:${PACT_BROKER_BASIC_AUTH_PASSWORD} -s "http://${test_ip}:${EXTERN_BROKER_PORT}/ui/relationships" | grep "0 pacts"
+curl -H "Accept:text/html" --user ${PACT_BROKER_BASIC_AUTH_USERNAME}:${PACT_BROKER_BASIC_AUTH_PASSWORD} -s "http://${test_ip}:${EXTERN_BROKER_PORT}" | grep "0 pacts"
 
 echo ""
 echo "Checking that server accepts and responds with status 200"
