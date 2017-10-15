@@ -56,14 +56,14 @@ fi
 [ -z "${PACT_BROKER_PORT}" ]             && PACT_BROKER_PORT=80
 [ -z "${PSQL_WAIT_TIMEOUT}" ]            && PSQL_WAIT_TIMEOUT="10s"
 [ -z "${PACT_WAIT_TIMEOUT}" ]            && PACT_WAIT_TIMEOUT="15s"
-[ -z "${PACT_CONT_NAME}" ]               && PACT_CONT_NAME="broker_app"
+[ -z "${PACT_CONT_NAME}" ]               && PACT_CONT_NAME="broker-app"
 [ -z "${PSQL_CONT_NAME}" ]               && PSQL_CONT_NAME="postgres"
 [ -z "${PACT_BROKER_DATABASE_ADAPTER}" ] && PACT_BROKER_DATABASE_ADAPTER="postgres"
 
 echo "Will build the pact broker"
 docker build -t=dius/pact_broker .
 
-# Stop and remove any running broker_app container instances before updating
+# Stop and remove any running broker-app container instances before updating
 if docker ps -a | grep ${PACT_CONT_NAME}; then
   echo ""
   echo "Stopping and removing running instance of pact broker container"
@@ -159,6 +159,7 @@ docker run --privileged --name=${PACT_CONT_NAME} -d -p ${PORT_BIND} \
   -e PACT_BROKER_DATABASE_PORT=${PACT_BROKER_DATABASE_PORT} \
   -e PACT_BROKER_BASIC_AUTH_USERNAME=${PACT_BROKER_BASIC_AUTH_USERNAME} \
   -e PACT_BROKER_BASIC_AUTH_PASSWORD=${PACT_BROKER_BASIC_AUTH_PASSWORD} \
+  -e PACT_BROKER_LOG_LEVEL=INFO \
   dius/pact_broker
 sleep 1 && docker logs ${PACT_CONT_NAME}
 
@@ -192,16 +193,34 @@ echo "Checking that server accepts and return HTML from outside"
 curl -H "Accept:text/html" --user ${PACT_BROKER_BASIC_AUTH_USERNAME}:${PACT_BROKER_BASIC_AUTH_PASSWORD} -s "http://${test_ip}:${EXTERN_BROKER_PORT}"
 
 echo ""
-echo "Checking for specific HTML content from outside: '0 pacts'"
-curl -H "Accept:text/html" --user ${PACT_BROKER_BASIC_AUTH_USERNAME}:${PACT_BROKER_BASIC_AUTH_PASSWORD} -s "http://${test_ip}:${EXTERN_BROKER_PORT}" | grep "0 pacts"
+echo "Checking for specific HTML content from outside: 'Pacts'"
+curl -H "Accept:text/html" --user ${PACT_BROKER_BASIC_AUTH_USERNAME}:${PACT_BROKER_BASIC_AUTH_PASSWORD} -s "http://${test_ip}:${EXTERN_BROKER_PORT}" | grep "Pacts"
 
-echo ""
 echo "Checking that server accepts and responds with status 200"
 response_code=$(curl -s -o /dev/null -w "%{http_code}" --user ${PACT_BROKER_BASIC_AUTH_USERNAME}:${PACT_BROKER_BASIC_AUTH_PASSWORD} http://${test_ip}:${EXTERN_BROKER_PORT})
 
-if [[ "${response_code}" == '200' ]]; then
-  echo ""
-  echo "SUCCESS: All tests passed!"
-else
-  die "While checking HTML response status 200"
+if [[ "${response_code}" -ne '200' ]]; then
+  die "Expected response code to be 200, but was ${response_code}"
 fi
+
+if [[ ! -z "${PACT_BROKER_BASIC_AUTH_USERNAME}" ]]; then
+  echo ""
+  echo "Checking that basic auth is configured"
+  response_code=$(curl -s -o /dev/null -w "%{http_code}" http://${test_ip}:${EXTERN_BROKER_PORT})
+
+  if [[ "${response_code}" -ne '401' ]]; then
+    die "Expected response code to be 401, but was ${response_code}"
+  fi
+fi
+
+script/publish.sh "http://${test_ip}:${EXTERN_BROKER_PORT}"
+
+echo ""
+echo "Checking that badges can be accessed without basic auth"
+response_code=$(curl -s -o /dev/null -w "%{http_code}" http://${test_ip}:${EXTERN_BROKER_PORT}/pacts/provider/Bar/consumer/Foo/latest/badge.svg)
+
+if [[ "${response_code}" -ne '200' ]]; then
+  die "Expected response code to be 200, but was ${response_code}"
+fi
+
+echo "SUCCESS: All tests passed!"
