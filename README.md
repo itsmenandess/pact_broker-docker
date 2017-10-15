@@ -3,6 +3,8 @@ Dockerised Pact Broker [![Build Status](https://travis-ci.org/DiUS/pact_broker-d
 
 This repository deploys [Pact Broker](https://github.com/pact-foundation/pact_broker) using lightweight containers using Docker. You can pull the dius/pact-broker image from [Dockerhub](https://hub.docker.com/r/dius/pact-broker/).
 
+My repository deploys [Pact Broker](https://github.com/pact-foundation/pact_broker) using lightweight containers using Docker. You can pull the nandess/pactbroker-docker image from [Dockerhub](https://hub.docker.com/r/nandess/pactbroker-docker/).
+
 ## Prerequisites
 
 * A running postgresql database and the ability to connect to it (see [POSTGRESQL.md](POSTGRESQL.md)).
