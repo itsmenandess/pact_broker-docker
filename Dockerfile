@@ -4,7 +4,7 @@
 #           |==> HERE
 FROM phusion/passenger-ruby22:0.9.17
 
-EXPOSE 80
+EXPOSE 5050
 ENV APP_HOME=/home/app/pact_broker
 CMD ["/sbin/my_init"]
 RUN rm -f /etc/service/nginx/down
