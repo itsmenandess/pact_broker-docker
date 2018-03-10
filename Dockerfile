@@ -19,6 +19,9 @@ RUN chown -R 755 $APP_HOME
 
 # Update system gems for:
 # https://www.ruby-lang.org/en/news/2017/08/29/multiple-vulnerabilities-in-rubygems/
+#RUN gem update --http-proxy=http://one.proxy.att.com:8080 --system
+#RUN gem install  --http-proxy=http://one.proxy.att.com:8080 bundler
+
 RUN gem update --system
 RUN gem install bundler
 RUN su app -c "cd $APP_HOME && bundle install --deployment --without='development test'"
