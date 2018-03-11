@@ -1,26 +1,13 @@
-version: '3'
+version: '2'
 
 services:
 
-  postgres:
-    image: postgres
-    healthcheck:
-      test: psql postgres --command "select 1"
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: postgres
-
   broker_app:
-    image: dius/pact-broker
+    image: localhost:5000/nandess/pact
     ports:
       - "80:80"
-    links:
-      - postgres
     environment:
-      PACT_BROKER_DATABASE_USERNAME: postgres
-      PACT_BROKER_DATABASE_PASSWORD: password
-      PACT_BROKER_DATABASE_HOST: postgres
-      PACT_BROKER_DATABASE_NAME: postgres
+      PACT_BROKER_DATABASE_USERNAME: root
+      PACT_BROKER_DATABASE_PASSWORD: n
+      PACT_BROKER_DATABASE_HOST: localhost:3360
+      PACT_BROKER_DATABASE_NAME: pact
