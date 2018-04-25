@@ -1,28 +1,22 @@
 ## Updating the Pact Broker gems
 
-    cd pact_broker
-    bundle update
+Run:
+
+    chruby 2.4 # or use your ruby version manager of choice
+    bundle install
+    script/update.sh
+
+This will update to the latest version of the pact broker gem allowable by the Gemfile. Note that if you want to release a beta version, you will need to specify the version explicitly. eg `gem "pact_broker", "2.7.0.beta.3"`
+
+## Debugging
 
     # Check Pact Broker can start
     PACT_BROKER_DATABASE_NAME=pact_broker.sqlite PACT_BROKER_DATABASE_ADAPTER=sqlite be rackup
 
-    # Run test script
-    cd ..
-    PACT_BROKER_DATABASE_NAME=pact_broker.sqlite PACT_BROKER_DATABASE_ADAPTER=sqlite script/test.sh
-    PACT_BROKER_DATABASE_NAME=pact_broker.sqlite PACT_BROKER_DATABASE_ADAPTER=sqlite script/test_basic_auth.sh
-
-    # Commit changes
-    git add pact_broker
-    git commit -m "feat(gems): update pact_broker gem to version $(cd pact_broker && bundle exec ruby -e "require 'pact_broker/version'; puts PactBroker::VERSION")"
-    git push
-
 ## Publishing to Docker Hub
 
-Docker hub will build an image every time a tag with pattern /^[0-9.\-]+/ (eg. 2.3.0-1) is pushed.
+Docker hub will build a new `latest` image every time a tag with a major.minor.patch version pattern is pushed. It will build with just the tag name if the version has something like '.beta.1' on the end.
 
 To release a new image with a tag:
 
-    export TAG=$(script/next-docker-tag.sh)
-    bundle exec rake generate_changelog # then remove extra whitespace
-    git add CHANGELOG.md && git commit -m "chore(changelog): update for ${TAG}"
     script/release.sh

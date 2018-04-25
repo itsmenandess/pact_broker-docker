@@ -4,27 +4,19 @@
 #           |==> HERE
 FROM phusion/passenger-ruby24:0.9.26
 
-EXPOSE 80
-ENV APP_HOME=/home/app/pact_broker
-CMD ["/sbin/my_init"]
-RUN rm -f /etc/service/nginx/down
-RUN rm /etc/nginx/sites-enabled/default
-ADD container /
+ENV APP_HOME=/home/app/pact_broker/
+RUN rm -f /etc/service/nginx/down /etc/nginx/sites-enabled/default
+COPY container /
+RUN gem update --system
+# USER app
 
-ADD pact_broker/config.ru $APP_HOME/
-ADD pact_broker/Gemfile $APP_HOME/
-ADD pact_broker/Gemfile.lock $APP_HOME/
-RUN chown -R app:app $APP_HOME
-#RUN chown -R 755 $APP_HOME
-
+COPY pact_broker/config.ru pact_broker/Gemfile pact_broker/Gemfile.lock $APP_HOME
 # Update system gems for:
 # https://www.ruby-lang.org/en/news/2017/08/29/multiple-vulnerabilities-in-rubygems/
-#RUN gem update --http-proxy=http://one.proxy.att.com:8080 --system
-#RUN gem install  --http-proxy=http://one.proxy.att.com:8080 bundler
-
-RUN gem update --system && gem -v && ruby -v
-RUN gem install bundler
-RUN su app -c "cd $APP_HOME && bundle install --deployment --without='development test'"
-ADD pact_broker/ $APP_HOME/
+RUN gem install bundler && \
+    cd $APP_HOME && bundle install --deployment --without='development test'
+COPY pact_broker/ $APP_HOME/
 RUN chown -R app:app $APP_HOME
-#RUN chown -R 755 $APP_HOME
+
+EXPOSE 80
+CMD ["/sbin/my_init"]

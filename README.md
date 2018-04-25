@@ -3,17 +3,15 @@ Dockerised Pact Broker [![Build Status](https://travis-ci.org/DiUS/pact_broker-d
 
 This repository deploys [Pact Broker](https://github.com/pact-foundation/pact_broker) using lightweight containers using Docker. You can pull the dius/pact-broker image from [Dockerhub](https://hub.docker.com/r/dius/pact-broker/).
 
-My repository deploys [Pact Broker](https://github.com/pact-foundation/pact_broker) using lightweight containers using Docker. You can pull the nandess/pactbroker-docker image from [Dockerhub](https://hub.docker.com/r/nandess/pactbroker-docker/).
-
 ## Prerequisites
 
-* A running postgresql database and the ability to connect to it (see [POSTGRESQL.md](POSTGRESQL.md)).
+* A running postgresql database and the ability to connect to it (see [POSTGRESQL.md][postgres]).
 * If on Mac, you will need the `timeout` or `gtimeout` function. You can install `gtimeout` using `brew install coreutils`.
 
 ## Getting Started
 
 1. [Install Docker](https://docs.docker.com/engine/installation/)
-2. Prepare your environment if you are not running postgresql in a docker container. Setup the pact broker connection to the database through the use of the following environment variables. If you want to use a disposable postgres docker container just do `export DISPOSABLE_PSQL=true` before running the [script/test.sh](script/test.sh).
+2. Prepare your environment if you are not running postgresql in a docker container. Setup the pact broker connection to the database through the use of the following environment variables. If you want to use a disposable postgres docker container just do `export DISPOSABLE_PSQL=true` before running the [script/test.sh][test-script].
 
 For a postgres or mysql database:
 
@@ -30,7 +28,7 @@ For an sqlite database (only recommended for investigation/spikes, as it will be
   * PACT_BROKER_DATABASE_ADAPTER (set to 'sqlite')
   * PACT_BROKER_DATABASE_NAME (arbitrary name eg. pact_broker.sqlite)
 
-3. Test the pact broker environment by executing [script/test.sh](script/test.sh)
+3. Test the pact broker environment by executing [script/test.sh][test-script]
 
 ## Notes
 
@@ -42,14 +40,23 @@ For an sqlite database (only recommended for investigation/spikes, as it will be
 ## Using basic auth
 Run your container with `PACT_BROKER_BASIC_AUTH_USERNAME` and `PACT_BROKER_BASIC_AUTH_PASSWORD` set to enable basic auth for the pact broker application. Note that the [verification status badges][badges] are not protected by basic auth, so that you may embed them in README markdown.
 
+If you are using the docker container within an AWS autoscaling group, and you need to make a heartbeat URL publicly available, set `PACT_BROKER_PUBLIC_HEARTBEAT=true`.
+
+## Using SSL
+See the [Pact Broker configuration documentation][reverse-proxy].
+
 ## Setting the log level
 
 Set the environment variable `PACT_BROKER_LOG_LEVEL` to one of `DEBUG`, `INFO`, `WARN`, `ERROR`, or `FATAL`.
 
+## General Pact Broker configuration and usage
+
+Documentation for the Pact Broker application itself can be found in the Pact Broker [wiki][pact-broker-wiki].
+
 ## Running with Docker Compose
 
 For a quick start with the Pact Broker and Postgres, we have an example
-[Docker Compose](docker-compose.yml) setup you can use:
+[Docker Compose][docker-compose] setup you can use:
 
 1. Modify the `docker-compose.yml` file as required.
 2. Run `docker-compose up` to get a running Pact Broker and a clean Postgres database
@@ -57,12 +64,17 @@ For a quick start with the Pact Broker and Postgres, we have an example
 Now you can access your local broker:
 
 ```sh
-# Get IP of your running Docker instance
-DOCKER_HOST=$(docker-machine ip $(docker-machine active))
-curl -v http://$DOCKER_HOST # you can visit in your browser too!
+curl -v http://localhost # you can visit in your browser too!
+
+# SSL endpoint, note that URLs in response contain https:// protocol
+curl -v -k https://localhost:8443
 ```
 
 _NOTE: this image should be modified before using in Production, in particular, the use of hard-coded credentials_
+
+## Running with Openshift
+
+See [pact-broker-openshift](https://github.com/jaimeniswonger/pact-broker-openshift) for an example config file.
 
 # Troubleshooting
 
@@ -70,3 +82,8 @@ See the [Troubleshooting][troubleshooting] page on the wiki.
 
 [badges]: https://github.com/pact-foundation/pact_broker/wiki/Provider-verification-badges
 [troubleshooting]: https://github.com/DiUS/pact_broker-docker/wiki/Troubleshooting
+[postgres]: https://github.com/DiUS/pact_broker-docker/blob/master/POSTGRESQL.md
+[test-script]: https://github.com/DiUS/pact_broker-docker/blob/master/script/test.sh
+[docker-compose]: https://github.com/DiUS/pact_broker-docker/blob/master/docker-compose.yml
+[pact-broker-wiki]: https://github.com/pact-foundation/pact_broker/wiki
+[reverse-proxy]: https://github.com/pact-foundation/pact_broker/wiki/Configuration#running-the-broker-behind-a-reverse-proxy
